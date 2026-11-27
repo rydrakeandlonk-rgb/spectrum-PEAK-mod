@@ -13,15 +13,27 @@ The first code scaffold has been committed. It is deliberately limited to infras
 - Startup/shutdown logging.
 - Game-neutral session snapshot models and an adapter interface.
 - .NET 10 SDK pin and PEAK-compatible netstandard2.1 target.
-- CI build workflow.
+- GitHub Actions restore/build workflow.
 - Per-developer game-path configuration template.
+- Local deployment disabled by default.
+
+### Verification state
+
+- [x] Source scaffold committed.
+- [x] CI workflow committed.
+- [ ] Successful CI build observed.
+- [ ] Local build confirmed against the user's SDK.
+- [ ] Plugin loaded in PEAK.
+- [ ] Clean shutdown verified in PEAK.
+
+Do not install this scaffold into the active Vortex profile until the build and load checks pass.
 
 ### Not implemented
 
 - PEAK lobby/player adapter.
 - PEAK host/authority detection.
-- Gameplay hooks or world mutations.
-- Item catalogue or item creation.
+- Any PEAK gameplay hooks or world mutations.
+- Any item catalogue or item creation.
 - Multiplayer RPC/network transport.
 - Control Center pairing or session authentication.
 - Event Hub redemption delivery.
@@ -55,7 +67,7 @@ Automatic local deployment is disabled by default until the active PEAK/Vortex p
 
 ## Next gates
 
-1. Obtain PEAK managed assemblies and the active `BepInEx/plugins` folder.
+1. Obtain PEAK managed assemblies and the active `BepInEx/plugins/` folder.
 2. Verify the installed BepInEx pack and game build.
 3. Inspect the existing Control Center and R.E.P.O. gateway protocol before implementing a socket client.
 4. Build and run the plugin in PEAK.
