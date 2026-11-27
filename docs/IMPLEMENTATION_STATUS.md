@@ -4,71 +4,55 @@ Last updated: 2026-11-27
 
 ## Current state
 
-The first code scaffold has been committed. It is deliberately limited to infrastructure that does not require undocumented PEAK internals.
+The project now has a minimal BepInEx plugin plus an initial Spectrum connection client. The client reuses the existing PEAK device-code pairing and authenticated WebSocket routes in the shared Spectrum Game Mods Worker.
 
 ### Implemented in repository
 
-- BepInEx plugin entry point with stable plugin GUID and version.
-- Local BepInEx configuration for feature gating and diagnostic verbosity.
-- Startup/shutdown logging.
-- Game-neutral session snapshot models and an adapter interface.
-- .NET 10 SDK pin and PEAK-compatible netstandard2.1 target.
-- GitHub Actions restore/build workflow.
-- Per-developer game-path configuration template.
-- Local deployment disabled by default.
+- BepInEx plugin entry point with stable plugin GUID and version 0.2.0.
+- Local configuration for enabling the connection, storing the paired host credential, and diagnostic verbosity.
+- Device-code pairing through the existing Spectrum Game Mods endpoint.
+- Control Center approval using the signed-in Spectrum Twitch identity; no Twitch OAuth or client secret is implemented in the mod.
+- Private host token persisted in the local BepInEx configuration after pairing.
+- Authenticated WebSocket connection to the PEAK-specific host session.
+- session.ready handshake and periodic ping/pong heartbeat.
+- No extra JSON runtime package; uses the target framework's data-contract JSON serializer.
+- Existing shared Game Mods worker routes and isolated PeakHostSession Durable Object are reused.
+- PEAK managed assemblies are uploaded under Uploads/PEAK_Data/Managed for API reconnaissance.
 
 ### Verification state
 
-- [x] Source scaffold committed.
-- [x] CI workflow committed.
-- [ ] Successful CI build observed.
-- [ ] Local build confirmed against the user's SDK.
+- [x] Connection client source committed.
+- [x] Existing PEAK pairing and WebSocket route contract inspected.
+- [ ] Successful PEAK plugin CI build observed after connection client changes.
 - [ ] Plugin loaded in PEAK.
-- [ ] Clean shutdown verified in PEAK.
+- [ ] Pairing completed in game.
+- [ ] Authenticated WebSocket handshake observed in production.
+- [ ] Clean shutdown/reconnect verified in PEAK.
 
-Do not install this scaffold into the active Vortex profile until the build and load checks pass.
+Do not install the plugin into the active Vortex profile until the CI build passes. The connection feature is disabled by default; set Connection.EnableIntegration = true in the generated BepInEx config to start device pairing.
 
 ### Not implemented
 
 - PEAK lobby/player adapter.
 - PEAK host/authority detection.
+- Player-to-Twitch identity mapping beyond the paired broadcaster identity.
 - Any PEAK gameplay hooks or world mutations.
 - Any item catalogue or item creation.
-- Multiplayer RPC/network transport.
-- Control Center pairing or session authentication.
+- Multiplayer RPC/network transport for gameplay actions.
 - Event Hub redemption delivery.
 - Charity event delivery.
-- Control Center PEAK page.
+- Control Center PEAK session diagnostics page verification.
 
-These are intentionally blocked until the installed game assemblies and existing Spectrum gateway contracts have been inspected.
+These remain gated on API reconnaissance and end-to-end connection tests.
 
 ## Build compatibility notes
 
-The PEAK community's maintained BepInEx template currently uses:
-- .NET SDK 10.0 or newer as the build toolchain.
-- `netstandard2.1` as the plugin target framework.
-- BepInEx 5 package references.
-- Unity 6000.0.36 module package as a fallback when local game assemblies are unavailable.
-
-This project follows that target/build-tool split. It does not assume that the uploaded archive is the current official PEAK BepInEx pack. The uploaded archive and active Vortex deployment still need to be compared.
-
-## Local build
-
-1. Install .NET SDK 10.
-2. Copy `Config.Build.user.props.template` to `Config.Build.user.props` if PEAK is installed outside the default Steam path.
-3. Restore and build:
-
-```powershell
-dotnet restore Spectrum.PEAK.slnx
-dotnet build Spectrum.PEAK.slnx -c Release
-```
-
-Automatic local deployment is disabled by default until the active PEAK/Vortex profile path is confirmed.
+The project targets netstandard2.1 and uses the .NET 10 SDK. The local PEAK managed assemblies are available in the repository; the build can be configured to reference them through Config.Build.user.props. The plugin currently uses only the shared gateway contract and does not compile against unverified PEAK gameplay types.
 
 ## Next gates
 
-1. Obtain PEAK managed assemblies and the active `BepInEx/plugins/` folder.
-2. Verify the installed BepInEx pack and game build.
-3. Inspect the existing Control Center and R.E.P.O. gateway protocol before implementing a socket client.
-4. Build and run the plugin in PEAK.
-5. Add the first verified lobby/session adapter.
+1. Run and inspect the GitHub Actions build.
+2. Verify the installed BepInEx pack and active Vortex plugin dependencies.
+3. Test device pairing and WebSocket connection in PEAK.
+4. Inspect Photon/Zorro/Assembly-CSharp types to identify lobby and player lifecycle APIs.
+5. Add a verified read-only lobby/player adapter.
