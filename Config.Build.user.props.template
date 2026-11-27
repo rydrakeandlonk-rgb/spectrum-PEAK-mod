@@ -1,0 +1,9 @@
+<!-- Copy to Config.Build.user.props locally; the copy is gitignored. -->
+<Project>
+  <PropertyGroup>
+    <!-- Set this only if PEAK is not in the default Steam install location. -->
+    <!-- <PEAKGameRootDir>D:\SteamLibrary\steamapps\common\PEAK\</PEAKGameRootDir> -->
+    <PEAKGameRootDir></PEAKGameRootDir>
+    <DeployModFiles>false</DeployModFiles>
+  </PropertyGroup>
+</Project>
