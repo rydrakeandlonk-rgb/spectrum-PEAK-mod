@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The PEAK community template uses SDK 10 to build a netstandard2.1 plugin. -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Spectrum.PEAK</AssemblyName>
+    <RootNamespace>Spectrum.PEAK</RootNamespace>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
+  </ItemGroup>
+
+  <!-- Fallback compile references while the local PEAK assemblies are unavailable. -->
+  <ItemGroup Condition="'$(PEAKGameRootDir)' == '' or !Exists('$(PEAKGameRootDir)PEAK_Data/Managed/Assembly-CSharp.dll')">
+    <PackageReference Include="UnityEngine.Modules" Version="6000.0.36" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Use real local game assemblies when the user configures their PEAK install path. -->
+  <ItemGroup Condition="'$(PEAKGameRootDir)' != '' and Exists('$(PEAKGameRootDir)PEAK_Data/Managed/Assembly-CSharp.dll')">
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(PEAKGameRootDir)PEAK_Data/Managed/Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(PEAKGameRootDir)PEAK_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
