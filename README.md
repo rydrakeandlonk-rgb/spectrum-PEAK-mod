@@ -1,60 +1,48 @@
 # Spectrum PEAK Mod
 
-Spectrum's PEAK game adapter. Shared Twitch identity, pairing approval, event routing, and charity processing remain in the existing Spectrum infrastructure.
+A BepInEx 5 plugin connecting PEAK to Spectrum's existing Control Center and Game Mods infrastructure.
 
-## Current status
+## Current milestone: authenticated connection
 
-The initial BepInEx plugin scaffold and CI build workflow are now in the repository. The plugin bootstrap has configuration and startup diagnostics, but deliberately does not yet inspect PEAK gameplay or connect to the network.
+Version 0.2.0 adds the initial device-pairing and WebSocket connection client.
 
-**The scaffold has been committed but has not yet been confirmed by a successful CI build or an in-game load test.** Do not install it into the live Vortex profile yet.
+1. Install the built Spectrum.PEAK.dll into the active PEAK BepInEx plugins folder after the CI build has passed.
+2. Launch PEAK once so BepInEx creates the plugin configuration.
+3. Open BepInEx/config/rydrake.spectrum.peak.cfg.
+4. Set Connection.EnableIntegration to true and launch PEAK again.
+5. The plugin logs a Spectrum pairing URL and one-time user code. Open the URL, sign in to the intended Spectrum Twitch account, and approve the device.
+6. The mod receives and stores a private broadcaster-scoped host credential locally, then opens an authenticated WebSocket to Spectrum Game Mods.
+7. The Control Center PEAK page should show the paired session as connected once the handshake is complete.
 
-## Architecture boundaries
+The host token is private. Do not share the BepInEx config file or publish its contents. Disabling the integration stops the connection on the next plugin load; access can also be revoked from Control Center.
 
-- **Control Center:** Twitch identity, access permissions, pairing, PEAK configuration, and administration.
-- **Event Hub:** Twitch EventSub validation and Channel Point redemption routing.
-- **Charity system:** Donation validation and donation event publication, separate from Event Hub.
-- **PEAK plugin:** PEAK-specific session/player observation and safe game-side execution using verified native APIs.
+## Current limitations
 
-The intended integration uses the shared Spectrum Game Mods service. No new Twitch OAuth flow or donation provider integration belongs in the plugin.
+- This milestone proves pairing and authenticated transport only.
+- It does not yet detect PEAK lobby/player state.
+- It does not create or modify gameplay objects.
+- It does not yet process Channel Point redemptions or charity donations.
+- PEAK gameplay APIs are being inspected from the uploaded Managed assemblies before hooks are added.
 
 ## Build
 
-Requirements:
-- .NET SDK 10 or newer.
-- PEAK's supported BepInEx 5 installation for eventual runtime testing.
-
-From the repository root:
+Requires .NET SDK 10. The plugin targets netstandard2.1.
 
 ```powershell
 dotnet restore Spectrum.PEAK.slnx
 dotnet build Spectrum.PEAK.slnx -c Release
 ```
 
-Copy `Config.Build.user.props.template` to `Config.Build.user.props` and set `PEAKGameRootDir` if PEAK is installed outside the default Steam location. The local deployment switch is disabled by default.
+The GitHub Actions workflow builds the plugin on pushes to main and uploads the DLL as an artifact. Do not install a build until the corresponding workflow run succeeds.
 
-GitHub Actions runs the same restore/build process on pushes to `main`, pull requests, and manual workflow dispatch.
+## Architecture
 
-## Documentation
+- Twitch identity and authorization: Spectrum Control Center.
+- Device pairing and authenticated game session: existing Spectrum Game Mods Worker.
+- Twitch Channel Point events: Event Hub, to be connected in a later stage.
+- Charity donation events: separate Charity Worker/app, to be connected in a later stage.
+- PEAK multiplayer and gameplay integration: PEAK-specific adapter using the game's native networking.
 
-- [Project status and repository audit](docs/PROJECT_STATUS.md)
-- [Implementation status](docs/IMPLEMENTATION_STATUS.md)
-- [Architecture and event flows](docs/ARCHITECTURE.md)
-- [PEAK modding research and dependencies](docs/RESEARCH_AND_DEPENDENCIES.md)
-- [Implementation action plan and test matrix](docs/ACTION_PLAN.md)
+The mod does not implement Twitch OAuth and does not contain Twitch client secrets.
 
-## Current blocker
-
-The uploaded BepInEx archive contains the loader framework but not the PEAK managed assemblies or the active `BepInEx/plugins/` folder. We need those before implementing lobby/player observation or any PEAK-specific runtime adapter.
-
-See [Project Status](docs/PROJECT_STATUS.md) for the exact upload list.
-
-## Development rules
-
-1. Reuse existing Spectrum infrastructure; do not add a second Twitch authentication or donation stack.
-2. Keep PEAK-specific code in this repository.
-3. Prefer PEAK's native multiplayer for shared game state.
-4. Use typed, bounded, deduplicated messages and host-confirmed acknowledgements.
-5. Do not guess PEAK APIs; record assembly/type/member evidence before implementation.
-6. Keep operational writes and background activity minimal.
-
-- [Shared Game Mods reuse notes](docs/SPECTRUM_GAME_MODS_REUSE.md)
+See docs/IMPLEMENTATION_STATUS.md, docs/ACTION_PLAN.md, and docs/SPECTRUM_GAME_MODS_REUSE.md for implementation detail.
