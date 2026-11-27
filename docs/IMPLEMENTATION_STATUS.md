@@ -23,13 +23,13 @@ The project now has a minimal BepInEx plugin plus an initial Spectrum connection
 
 - [x] Connection client source committed.
 - [x] Existing PEAK pairing and WebSocket route contract inspected.
-- [ ] Successful PEAK plugin CI build observed after connection client changes.
+- [x] Successful PEAK plugin CI build and DLL artifact upload verified (run 45998067239).
 - [ ] Plugin loaded in PEAK.
 - [ ] Pairing completed in game.
 - [ ] Authenticated WebSocket handshake observed in production.
 - [ ] Clean shutdown/reconnect verified in PEAK.
 
-Do not install the plugin into the active Vortex profile until the CI build passes. The connection feature is disabled by default; set Connection.EnableIntegration = true in the generated BepInEx config to start device pairing.
+The CI build and artifact upload now pass. The DLL is available from the latest successful GitHub Actions run; in-game pairing and loading still need to be tested before broader use. The connection feature is disabled by default; set Connection.EnableIntegration = true in the generated BepInEx config to start device pairing.
 
 ### Not implemented
 
