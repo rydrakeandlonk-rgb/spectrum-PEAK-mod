@@ -209,3 +209,16 @@ This is the implementation plan and acceptance checklist. Work proceeds in gated
 - Update API notes when a method or dependency is verified.
 - Update this checklist only when a stage's exit criteria are met.
 - Do not silently change shared gateway schemas; document and test compatibility across existing game integrations first.
+
+## Scaffold progress update — 2026-11-27
+
+- [x] Add initial BepInEx plugin entry point and stable plugin identity.
+- [x] Add local feature-gate and diagnostic configuration.
+- [x] Add startup/shutdown diagnostics.
+- [x] Add game-neutral PEAK session-provider boundary.
+- [x] Add .NET 10 SDK / netstandard2.1 project setup.
+- [x] Add GitHub Actions restore/build workflow.
+- [ ] Observe a successful CI build; no workflow run has been observed yet.
+- [ ] Confirm local build and plugin load in PEAK.
+
+The scaffold does not yet connect to Spectrum Game Mods because no PEAK pairing/session endpoint exists. The existing service and client patterns have been inspected; backend extension work is tracked in [Shared Game Mods Reuse](SPECTRUM_GAME_MODS_REUSE.md).
