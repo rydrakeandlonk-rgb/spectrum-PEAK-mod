@@ -56,3 +56,5 @@ See [Project Status](docs/PROJECT_STATUS.md) for the exact upload list.
 4. Use typed, bounded, deduplicated messages and host-confirmed acknowledgements.
 5. Do not guess PEAK APIs; record assembly/type/member evidence before implementation.
 6. Keep operational writes and background activity minimal.
+
+- [Shared Game Mods reuse notes](docs/SPECTRUM_GAME_MODS_REUSE.md)
