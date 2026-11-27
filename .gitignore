@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+artifacts/
+.nuget/
+Config.Build.user.props
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
