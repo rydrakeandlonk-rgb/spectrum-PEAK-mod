@@ -9,9 +9,10 @@ internal static class PluginDiagnostics
     public static void LogStartup(ManualLogSource logger, PluginSettings settings)
     {
         logger.LogInfo("Runtime: BepInEx plugin bootstrap is active.");
-        logger.LogInfo($"Integration feature gate: {(settings.EnableIntegration.Value ? "enabled" : "disabled")}.");
-        logger.LogInfo($"Verbose diagnostics: {(settings.VerboseLogging.Value ? "enabled" : "disabled")}.");
-        logger.LogInfo("PEAK game adapters are not registered yet; game APIs are pending assembly inspection.");
-        logger.LogInfo("No Twitch credentials, donation data, or network endpoints are stored by this plugin bootstrap.");
+        logger.LogInfo("Spectrum connection: " + (settings.EnableIntegration.Value ? "enabled" : "disabled") + ".");
+        logger.LogInfo("Paired broadcaster ID present: " + (!string.IsNullOrWhiteSpace(settings.BroadcasterUserId.Value)) + ".");
+        logger.LogInfo("Saved host credential present: " + (!string.IsNullOrWhiteSpace(settings.HostToken.Value)) + ".");
+        logger.LogInfo("Verbose diagnostics: " + (settings.VerboseLogging.Value ? "enabled" : "disabled") + ".");
+        logger.LogInfo("PEAK lobby/player adapter is not registered yet; no gameplay state is read or changed.");
     }
 }
