@@ -2,28 +2,43 @@ using BepInEx.Configuration;
 
 namespace Spectrum.PEAK.Configuration;
 
-/// <summary>
-/// Local diagnostic and feature-gate settings.
-/// Network integration remains disabled until the shared Spectrum protocol
-/// and PEAK session APIs have been verified.
-/// </summary>
+/// <summary>Local connection and diagnostic settings.</summary>
 internal sealed class PluginSettings
 {
+    private readonly ConfigFile _config;
+
     public ConfigEntry<bool> EnableIntegration { get; }
     public ConfigEntry<bool> VerboseLogging { get; }
+    public ConfigEntry<string> HostToken { get; }
+    public ConfigEntry<string> BroadcasterUserId { get; }
 
     public PluginSettings(ConfigFile config)
     {
+        _config = config;
         EnableIntegration = config.Bind(
-            "General",
+            "Connection",
             "EnableIntegration",
             false,
-            "Reserved feature gate. Keep disabled until the Spectrum session protocol is implemented and tested.");
+            "Enable the Spectrum connection and device-code pairing flow.");
+
+        HostToken = config.Bind(
+            "Connection",
+            "HostToken",
+            "",
+            "Private credential issued by Spectrum during pairing. Do not share this value.");
+
+        BroadcasterUserId = config.Bind(
+            "Connection",
+            "BroadcasterUserId",
+            "",
+            "Twitch account ID associated with this paired PEAK installation.");
 
         VerboseLogging = config.Bind(
             "Diagnostics",
             "VerboseLogging",
             false,
-            "Enable additional diagnostic logging. Do not log credentials or private payloads.");
+            "Enable additional diagnostic logging. Credentials are never logged.");
     }
+
+    public void Save() => _config.Save();
 }
