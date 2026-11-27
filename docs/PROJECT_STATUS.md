@@ -133,3 +133,9 @@ If practical, also include the PEAK game version/build number and the exact BepI
 | Event Hub integration | Not started |
 | Charity integration | Not started |
 | Multiplayer acceptance tests | Not started |
+
+## Scaffold update — 2026-11-27
+
+The repository now also contains an initial BepInEx plugin scaffold under `src/Spectrum.PEAK/`, a .NET solution, build configuration, and a GitHub Actions build workflow. See [Implementation Status](IMPLEMENTATION_STATUS.md).
+
+The scaffold has not yet been confirmed by a successful CI build or an in-game load test. The shared Spectrum Game Mods Worker and its Stardew/R.E.P.O. pairing patterns have now been inspected at the documentation and client-source level. PEAK-specific pairing and Control Center routes do not exist yet; see [Shared Game Mods Reuse](SPECTRUM_GAME_MODS_REUSE.md).
