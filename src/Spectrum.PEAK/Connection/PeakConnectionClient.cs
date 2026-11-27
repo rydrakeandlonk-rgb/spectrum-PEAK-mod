@@ -1,8 +1,10 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.WebSockets;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BepInEx.Configuration;
@@ -10,7 +12,7 @@ using BepInEx.Configuration;
 namespace Spectrum.PEAK.Connection;
 
 /// <summary>
-/// Handles the Spectrum device-code pairing and authenticated host connection.
+/// Handles Spectrum device-code pairing and the authenticated host connection.
 /// It deliberately does not inspect or modify PEAK gameplay state.
 /// </summary>
 internal sealed class PeakConnectionClient : IDisposable
@@ -24,10 +26,7 @@ internal sealed class PeakConnectionClient : IDisposable
     private readonly CancellationTokenSource _shutdown = new CancellationTokenSource();
     private Task? _runner;
 
-    public PeakConnectionClient(
-        ConfigEntry<bool> enabled,
-        ConfigEntry<string> hostToken,
-        ConfigEntry<string> broadcasterId)
+    public PeakConnectionClient(ConfigEntry<bool> enabled, ConfigEntry<string> hostToken, ConfigEntry<string> broadcasterId)
     {
         _enabled = enabled;
         _hostToken = hostToken;
@@ -41,7 +40,6 @@ internal sealed class PeakConnectionClient : IDisposable
             Plugin.Log.LogInfo("Spectrum connection is disabled in the plugin configuration.");
             return;
         }
-
         if (_runner != null) return;
         _runner = Task.Run(() => RunAsync(_shutdown.Token));
     }
@@ -52,11 +50,8 @@ internal sealed class PeakConnectionClient : IDisposable
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(_hostToken.Value) ||
-                    string.IsNullOrWhiteSpace(_broadcasterId.Value))
-                {
+                if (string.IsNullOrWhiteSpace(_hostToken.Value) || string.IsNullOrWhiteSpace(_broadcasterId.Value))
                     await PairDeviceAsync(cancellationToken);
-                }
 
                 await ConnectAsync(cancellationToken);
             }
@@ -82,11 +77,10 @@ internal sealed class PeakConnectionClient : IDisposable
             cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        using var startJson = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var root = startJson.RootElement;
-        var userCode = root.GetProperty("user_code").GetString() ?? throw new InvalidOperationException("Pairing code was missing.");
-        var deviceCode = root.GetProperty("device_code").GetString() ?? throw new InvalidOperationException("Device code was missing.");
-        var verificationUri = root.GetProperty("verification_uri").GetString() ?? ServiceBaseUrl;
+        var start = Deserialize<PairingStartResponse>(await response.Content.ReadAsStringAsync());
+        var userCode = start.UserCode ?? throw new InvalidOperationException("Pairing code was missing.");
+        var deviceCode = start.DeviceCode ?? throw new InvalidOperationException("Device code was missing.");
+        var verificationUri = start.VerificationUri ?? ServiceBaseUrl;
 
         Plugin.Log.LogInfo("Spectrum pairing required. Open " + verificationUri + " and enter code " + userCode + ".");
         var pollUri = ServiceBaseUrl + "/connect/peak/pairing/poll";
@@ -94,28 +88,24 @@ internal sealed class PeakConnectionClient : IDisposable
         while (!cancellationToken.IsCancellationRequested)
         {
             await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-            var body = JsonSerializer.Serialize(new { user_code = userCode, device_code = deviceCode });
+            var body = Serialize(new PairingPollRequest { UserCode = userCode, DeviceCode = deviceCode });
             using var pollResponse = await Http.PostAsync(
                 pollUri,
                 new StringContent(body, Encoding.UTF8, "application/json"),
                 cancellationToken);
             pollResponse.EnsureSuccessStatusCode();
 
-            using var pollJson = JsonDocument.Parse(await pollResponse.Content.ReadAsStringAsync());
-            var poll = pollJson.RootElement;
-            var status = poll.TryGetProperty("status", out var statusElement)
-                ? statusElement.GetString()
-                : "unknown";
+            var poll = Deserialize<PairingPollResponse>(await pollResponse.Content.ReadAsStringAsync());
+            if (poll.Status == "pending") continue;
+            if (poll.Status == "expired")
+                throw new InvalidOperationException("Spectrum pairing code expired. Restart the plugin to request a new code.");
+            if (poll.Status != "authorized")
+                throw new InvalidOperationException("Unexpected Spectrum pairing status: " + poll.Status);
 
-            if (status == "pending") continue;
-            if (status == "expired") throw new InvalidOperationException("Spectrum pairing code expired. Restart the plugin to request a new code.");
-            if (status != "authorized") throw new InvalidOperationException("Unexpected Spectrum pairing status: " + status);
-
-            _hostToken.Value = poll.GetProperty("host_token").GetString() ?? "";
-            _broadcasterId.Value = poll.GetProperty("broadcaster_user_id").GetString() ?? "";
+            _hostToken.Value = poll.HostToken ?? "";
+            _broadcasterId.Value = poll.BroadcasterUserId ?? "";
             Plugin.Settings.Save();
-            Plugin.Log.LogInfo("Spectrum pairing approved for Twitch account " +
-                (poll.TryGetProperty("broadcaster_login", out var login) ? login.GetString() : "connected account") + ".");
+            Plugin.Log.LogInfo("Spectrum pairing approved for Twitch account " + (poll.BroadcasterLogin ?? "connected account") + ".");
             return;
         }
     }
@@ -169,6 +159,43 @@ internal sealed class PeakConnectionClient : IDisposable
 
             await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
         }
+    }
+
+    private static T Deserialize<T>(string json)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        return (T)new DataContractJsonSerializer(typeof(T)).ReadObject(stream)!;
+    }
+
+    private static string Serialize<T>(T value)
+    {
+        using var stream = new MemoryStream();
+        new DataContractJsonSerializer(typeof(T)).WriteObject(stream, value);
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    [DataContract]
+    private sealed class PairingStartResponse
+    {
+        [DataMember(Name = "user_code")] public string? UserCode { get; set; }
+        [DataMember(Name = "device_code")] public string? DeviceCode { get; set; }
+        [DataMember(Name = "verification_uri")] public string? VerificationUri { get; set; }
+    }
+
+    [DataContract]
+    private sealed class PairingPollRequest
+    {
+        [DataMember(Name = "user_code")] public string? UserCode { get; set; }
+        [DataMember(Name = "device_code")] public string? DeviceCode { get; set; }
+    }
+
+    [DataContract]
+    private sealed class PairingPollResponse
+    {
+        [DataMember(Name = "status")] public string? Status { get; set; }
+        [DataMember(Name = "host_token")] public string? HostToken { get; set; }
+        [DataMember(Name = "broadcaster_user_id")] public string? BroadcasterUserId { get; set; }
+        [DataMember(Name = "broadcaster_login")] public string? BroadcasterLogin { get; set; }
     }
 
     public void Dispose()
